@@ -1,7 +1,7 @@
 # SocialAI — production deployment.
 #   docker compose up -d --build
-# Serves the app on host port 3010 (put a reverse proxy in front for
-# https://socialai.innotel.us).
+# Serves the app on host port 3000. Put a reverse proxy in front for
+# https://socialai.innotel.us (the app itself serves HTTP).
 
 services:
   socialai:
@@ -10,7 +10,7 @@ services:
     container_name: socialai
     restart: always
     ports:
-      - "3010:3000"
+      - "3000:3000"
     env_file: .env
     environment:
       - PUBLIC_URL=https://socialai.innotel.us
