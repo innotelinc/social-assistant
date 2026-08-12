@@ -1,0 +1,27 @@
+# SocialAI — production deployment.
+#   docker compose up -d --build
+# Serves the app on host port 3010 (put a reverse proxy in front for
+# https://socialai.innotel.us).
+
+services:
+  socialai:
+    build: .
+    image: socialai:latest
+    container_name: socialai
+    restart: always
+    ports:
+      - "3010:3000"
+    env_file: .env
+    environment:
+      - PUBLIC_URL=https://socialai.innotel.us
+    volumes:
+      - socialai-data:/app/data
+    healthcheck:
+      test: ["CMD", "node", "-e", "const r=require('http').get('http://localhost:3000/api/health',res=>process.exit(res.statusCode<500?0:1));r.on('error',()=>process.exit(1));r.setTimeout(4000,()=>{r.destroy();process.exit(1)})"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  socialai-data:
