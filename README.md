@@ -44,26 +44,27 @@ SocialAI fuses their best ideas into one clean, fast app.
 git clone https://github.com/innotelinc/social-assistant.git
 cd social-assistant
 cp .env.example .env
-sed -i "s/change-me-64-char-hex-string/$(openssl rand -hex 32)/" .env
 
 # 2. Build & run
 docker compose up -d --build
 
 # 3. Open
-open http://localhost:3010
+open http://localhost:3000
 ```
 
-The app runs as a **single container** (frontend + API + autopilot scheduler +
+The app runs as a **single container** (frontend + API + autopilot worker +
 SQLite). A named volume keeps your posts, campaigns, and tokens across
-restarts.
+restarts. The container runs two processes: the Next.js web server and the
+autopilot worker (`scripts/scheduler.ts`, compiled and started via the Docker
+CMD — the standalone server does not run `instrumentation.ts`).
 
 ### Reverse proxy for socialai.innotel.us
 
-Point your proxy at port `3010`. Example Caddy config:
+Point your proxy at port `3000`. Example Caddy config:
 
 ```
 socialai.innotel.us {
-    reverse_proxy localhost:3010
+    reverse_proxy localhost:3000
 }
 ```
 
@@ -73,7 +74,7 @@ Or nginx:
 server {
     server_name socialai.innotel.us;
     location / {
-        proxy_pass http://127.0.0.1:3010;
+        proxy_pass http://127.0.0.1:3000;
         proxy_set_header Host $host;
         proxy_set_header X-Forwarded-Proto https;
     }
@@ -247,8 +248,9 @@ social-assistant/
 | Command | Description |
 |---|---|
 | `npm run dev` | Start the dev server on :3000 |
-| `npm run build` | Production build |
-| `npm start` | Serve the production build |
+| `npm run build` | Production build (standalone output) |
+| `npm start` | Serve the standalone build (`node .next/standalone/server.js`) |
+| `npm run scheduler` | Compile + run the autopilot worker standalone |
 | `npm run lint` | ESLint |
 | `npm run typecheck` | TypeScript check |
 

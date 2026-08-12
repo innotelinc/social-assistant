@@ -6,6 +6,9 @@ export const metadata: Metadata = {
     default: "SocialAI — Your AI Social Assistant",
     template: "%s · SocialAI",
   },
+  icons: {
+    icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
+  },
   description:
     "SocialAI is the easiest way to run your social media: an AI assistant that learns your voice, writes on-brand content for every platform, schedules it, and publishes everywhere — all from one dashboard.",
   keywords: [
