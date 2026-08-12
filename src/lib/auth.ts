@@ -17,7 +17,10 @@ export function hashPassword(pw: string): { salt: string; hash: string } {
 }
 
 export function verifyPassword(pw: string, salt: string, expected: string): boolean {
-  return hash(pw, salt) === expected;
+  const actual = Buffer.from(hash(pw, salt), "hex");
+  const want = Buffer.from(expected, "hex");
+  if (actual.length !== want.length) return false;
+  return crypto.timingSafeEqual(actual, want);
 }
 
 export async function setSessionCookie(userId: string): Promise<void> {

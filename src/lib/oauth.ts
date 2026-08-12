@@ -2,7 +2,7 @@
 // Handles: authorize redirect → callback → token exchange → token refresh → secure storage.
 
 import crypto from "node:crypto";
-import { getUsers, getUser, updateUser, getCredentialsRow, saveCredentialsRow } from "./db";
+import { getUser, updateUser, getCredentialsRow, saveCredentialsRow } from "./db";
 import { PLATFORM_APIS, envClientId, envClientSecret, type PlatformApi } from "./platforms";
 
 // In-memory state store — maps state → { userId, platform, codeVerifier }
@@ -263,6 +263,3 @@ export function saveCredentials(
 
 // Every OAuth popup success must mark the channel connected even before
 // auto-configure runs; storeTokens does this on callback.
-export function getUsersSnapshot() {
-  return getUsers();
-}

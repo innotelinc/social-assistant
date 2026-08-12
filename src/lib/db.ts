@@ -19,6 +19,7 @@ function getDB(): Database.Database {
   fs.mkdirSync(DATA_DIR, { recursive: true });
   db = new Database(DB_FILE);
   db.pragma("journal_mode = WAL");
+  db.pragma("foreign_keys = ON");
   db.exec(`
     CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,
@@ -183,6 +184,12 @@ export function saveCredentialsRow(userId: string, platformId: string, creds: Pl
     `INSERT INTO platform_credentials (user_id, platform_id, creds) VALUES (?, ?, ?)
      ON CONFLICT (user_id, platform_id) DO UPDATE SET creds = excluded.creds`
   ).run(userId, platformId, JSON.stringify(creds));
+}
+
+/** Platform ids that have a saved credentials row for this user. */
+export function getCredentialedPlatforms(userId: string): string[] {
+  const rows = getDB().prepare("SELECT platform_id FROM platform_credentials WHERE user_id = ?").all(userId) as { platform_id: string }[];
+  return rows.map((r) => r.platform_id);
 }
 
 // ------------------------------------------------------------------ subscriptions

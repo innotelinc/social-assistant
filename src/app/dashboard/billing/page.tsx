@@ -6,31 +6,23 @@ import { api, post } from "@/lib/client-api";
 import { Card, Button, Badge, useToast, Spinner } from "@/components/ui";
 import { PLANS } from "@/lib/types";
 
-interface BillingInfo {
-  plan: { id: string; name: string; maxChannels: number; aiGenerationsPerDay: number };
+interface SubscriptionInfo {
   sub: { status: string; planName: string | null; currentPeriodEnd: number | null; cancelAtPeriodEnd: boolean } | null;
+  plan: { id: string; name: string; maxChannels: number; aiGenerationsPerDay: number };
   aiLeft: number;
   connected: number;
 }
 
 export default function BillingPage() {
   const search = useSearchParams();
-  const [info, setInfo] = React.useState<BillingInfo | null>(null);
+  const [info, setInfo] = React.useState<SubscriptionInfo | null>(null);
   const [busy, setBusy] = React.useState<string | null>(null);
   const { push, node } = useToast();
 
   const load = React.useCallback(async () => {
     try {
-      const [d, sub] = await Promise.all([
-        api<{ plan: { id: string; name: string; maxChannels: number; aiGenerationsPerDay: number }; channelsConnected: number; aiLeft: number }>("/api/dashboard"),
-        api<BillingInfo["sub"]>("/api/subscription").catch(() => null),
-      ]);
-      setInfo({
-        plan: d.plan,
-        sub,
-        aiLeft: d.aiLeft ?? -1,
-        connected: d.channelsConnected ?? 0,
-      });
+      const sub = await api<SubscriptionInfo>("/api/subscription");
+      setInfo(sub);
     } catch {
       push("Failed to load billing info", "danger");
     }
