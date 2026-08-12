@@ -358,9 +358,6 @@ export async function autoConfigurePlatform(userId: string, platformId: string):
   const user = users[userId];
   if (!user) return;
 
-  const xCreds = (user.channels.find((c) => c.id === "x")?.id ? user : user); // no-op for type flow
-  void xCreds;
-
   // Per-user extra creds live in the credentials row.
   const { getCredentialsRow } = await import("./db");
   const credsRow = getCredentialsRow(userId, platformId);

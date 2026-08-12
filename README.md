@@ -103,7 +103,6 @@ works immediately with no configuration.
 |---|---|---|
 | `PUBLIC_URL` | `http://localhost:3000` | Public URL of this instance (OAuth redirects + Stripe) |
 | `PORT` | `3000` | Server port |
-| `SESSION_SECRET` | — | *Recommended.* Random hex for session signing |
 | `AI_API_KEY` | — | Optional instance-wide AI key (users can also add their own) |
 | `AI_PROVIDER` | `openai` | `openai` \| `anthropic` |
 | `AI_BASE_URL` | `https://api.openai.com/v1` | OpenAI-compatible endpoint |

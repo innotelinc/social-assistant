@@ -3,7 +3,7 @@
 // the original engine, adapted to SQLite persistence.
 
 import crypto from "node:crypto";
-import { getUsers, saveUser, updateUser } from "./db";
+import { getUsers, saveUser, getCredentialedPlatforms } from "./db";
 import { postToPlatform } from "./post-engine";
 import * as ai from "./ai-engine";
 import { platformName, type Campaign, type Channel, type Post, type User } from "./types";
@@ -14,6 +14,11 @@ const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(mi
 /** Client-safe view of a user's state: strips OAuth tokens + credential secrets. */
 export function sanitize(user: User) {
   const maskedCreds: Record<string, { configured: boolean; oauth2Configured?: boolean; extra: Record<string, unknown> }> = {};
+  // Mark every platform that has saved API credentials (so the Settings UI's
+  // "saved" badge survives reloads) or an active connection.
+  for (const pid of getCredentialedPlatforms(user.id)) {
+    maskedCreds[pid] = { configured: true, oauth2Configured: true, extra: {} };
+  }
   for (const ch of user.channels) {
     if (ch.connected || ch.oauth) {
       maskedCreds[ch.id] = {
@@ -354,9 +359,4 @@ export function builtinAI(kind: string, body: Record<string, unknown>, user: Use
     default:
       return { text: (ai.generatePost({ ...opts, brand: b }) as { text: string }).text };
   }
-}
-
-export function saveUserDirect(user: User) {
-  updateUser(user.id, () => { /* no-op */ });
-  saveUser(user);
 }

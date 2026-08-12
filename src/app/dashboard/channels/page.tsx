@@ -37,7 +37,11 @@ export default function ChannelsPage() {
 
   React.useEffect(() => {
     load();
-    const onOAuth = () => {
+    const onOAuth = (event: MessageEvent) => {
+      // Only trust popup messages from our own origin (the OAuth callback page).
+      if (event.origin !== window.location.origin) return;
+      const data = event.data as { type?: string } | null;
+      if (data?.type !== "OAUTH_SUCCESS") return;
       push("✅ Channel connected! Syncing profile…", "info");
       load();
     };

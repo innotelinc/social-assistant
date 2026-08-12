@@ -2,7 +2,12 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { stripe, planIdForPrice, stripeEnabled } from "@/lib/stripe";
-import { upsertSubscription } from "@/lib/db";
+import {
+  upsertSubscription,
+  getSubscriptionByCustomer,
+  getSubscriptionByStripeId,
+  getUser,
+} from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
@@ -18,15 +23,20 @@ export async function POST(req: NextRequest) {
     const raw = await req.text();
     event = stripe.webhooks.constructEvent(raw, signature, secret);
   } catch (err) {
-    return NextResponse.json({ error: `Webhook signature verification failed: ${err instanceof Error ? err.message : ""}` }, { status: 400 });
+    return NextResponse.json(
+      { error: `Webhook signature verification failed: ${err instanceof Error ? err.message : ""}` },
+      { status: 400 }
+    );
   }
 
   try {
     switch (event.type) {
       case "checkout.session.completed": {
-        const session = event.data.object as { customer?: string; subscription?: string; metadata?: Record<string, string>; client_reference_id?: string };
+        const session = event.data.object as {
+          customer?: string; subscription?: string; metadata?: Record<string, string>; client_reference_id?: string;
+        };
         const userId = session.metadata?.userId || session.client_reference_id || "";
-        if (userId) {
+        if (userId && getUser(userId)) {
           upsertSubscription({
             userId,
             stripeCustomerId: session.customer || null,
@@ -44,7 +54,7 @@ export async function POST(req: NextRequest) {
         };
         const priceId = sub.items?.data?.[0]?.price?.id;
         const planName = planIdForPrice(priceId);
-        const existing = await import("@/lib/db").then((m) => m.getSubscriptionByCustomer(sub.customer || ""));
+        const existing = getSubscriptionByCustomer(sub.customer || "");
         if (existing) {
           upsertSubscription({
             userId: existing.userId,
@@ -56,27 +66,17 @@ export async function POST(req: NextRequest) {
             currentPeriodEnd: sub.current_period_end ? sub.current_period_end * 1000 : null,
             cancelAtPeriodEnd: !!sub.cancel_at_period_end,
           });
-        } else if (sub.customer) {
-          // Subscription created before checkout completed event handled user linkage — store what we can.
-          upsertSubscription({
-            userId: "",
-            stripeCustomerId: sub.customer,
-            stripeSubscriptionId: sub.id,
-            planName: planName,
-            status: sub.status || "active",
-          });
+        } else {
+          // The checkout.session.completed handler already links customer → user.
+          console.warn("[stripe-webhook] subscription event for unknown customer, skipping:", sub.customer);
         }
         break;
       }
       case "customer.subscription.deleted": {
         const sub = event.data.object as { id: string };
-        const existing = await import("@/lib/db").then((m) => m.getSubscriptionByStripeId(sub.id));
+        const existing = getSubscriptionByStripeId(sub.id);
         if (existing) {
-          upsertSubscription({
-            userId: existing.userId,
-            stripeSubscriptionId: sub.id,
-            status: "canceled",
-          });
+          upsertSubscription({ userId: existing.userId, stripeSubscriptionId: sub.id, status: "canceled" });
         }
         break;
       }
